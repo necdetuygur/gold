@@ -100,7 +100,6 @@ http.createServer((req, res) => {
 
 function Refresh(){
     Get("http://www.ikd.sadearge.com/Firma/tablo.php", Put);
-    return;
     var urls = {};
     for(i in GLOBAL_DATA){
         for (j in GLOBAL_DATA[i]){

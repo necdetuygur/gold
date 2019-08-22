@@ -5,6 +5,7 @@ const request = require('request');
 const striptags = require('striptags');
 const hostname = process.env.IP || '0.0.0.0';
 const port = process.env.PORT || 3000;
+var GetCounter = 0;
 var GLOBAL_MSG = ".";
 var GLOBAL_DATA = {
     "Değişiklik": {
@@ -27,7 +28,7 @@ var GLOBAL_DATA = {
         "vote": {
             "url": "https://finanswebde.com/altin/gram-altin",
             "regex": /<div class="col-md-6"><span class="detail-change(.*?)>(.*?)<!--(.*?)<\/span>(.*?)<span(.*?)class=\"detail-title-sm\">(.*?)<span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi,
-            "regexIndex": 6,
+            "regexIndex": 7,
             "clear": "",
             "value": ""
         },
@@ -99,7 +100,6 @@ http.createServer((req, res) => {
 });
 
 function Refresh(){
-    Get("http://www.ikd.sadearge.com/Firma/tablo.php", Put);
     var urls = {};
     for(i in GLOBAL_DATA){
         for (j in GLOBAL_DATA[i]){
@@ -173,6 +173,7 @@ function MatchAll(str, regex) {
 }
 
 function Get(url, callback){
+    console.log(++GetCounter);
     request({
         url: url,
         method: "get"

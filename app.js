@@ -6,178 +6,169 @@ const striptags = require('striptags');
 const hostname = process.env.IP || '0.0.0.0';
 const port = process.env.PORT || 3000;
 var GetCounter = 0;
+var RefreshTime = 1e5;
+var RefreshTimer = null;
 var GLOBAL_MSG = ".";
-var GLOBAL_DATA = {
-    "Değişiklik": {
-        "status": {
-            "url": "http://www.ikd.sadearge.com/Firma/tablo.php",
-            "regex": /tarih(.*?)>(.*?)<\/span>/gmi,
-            "regexIndex": 2,
-            "clear": /Son Güncellenme Tarihi :/g,
-            "value": ""
-        }
-    },
-    "Gram": {
-        "status": {
-            "url": "https://finanswebde.com/altin/gram-altin",
-            "regex": /<div class="col-md-6"><span class="detail-change(.*?)>(.*?)<!--(.*?)<\/span>(.*?)<span(.*?)class=\"detail-title-sm\">(.*?)<span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi,
-            "regexIndex": 2,
-            "clear": "",
-            "value": ""
-        },
-        "vote": {
-            "url": "https://finanswebde.com/altin/gram-altin",
-            "regex": /<div class="col-md-6"><span class="detail-change(.*?)>(.*?)<!--(.*?)<\/span>(.*?)<span(.*?)class=\"detail-title-sm\">(.*?)<span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi,
-            "regexIndex": 7,
-            "clear": "",
-            "value": ""
-        },
-        "price": {
-            "url": "http://www.ikd.sadearge.com/Firma/tablo.php",
-            "regex": /row6_satis(.*?)>(.*?)<\/td>/gmi,
-            "regexIndex": 2,
-            "clear": "",
-            "value": ""
-        }
-    },
-    "Çeyrek": {
-        "status": {
-            "url": "https://finanswebde.com/altin/ceyrek-altin",
-            "regex": /<div class="col-md-6"><span class="detail-change(.*?)>(.*?)<!--(.*?)<\/span>(.*?)<span(.*?)class=\"detail-title-sm\">(.*?)<span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi,
-            "regexIndex": 2,
-            "clear": "",
-            "value": ""
-        },
-        "vote": {
-            "url": "https://finanswebde.com/altin/ceyrek-altin",
-            "regex": /<div class="col-md-6"><span class="detail-change(.*?)>(.*?)<!--(.*?)<\/span>(.*?)<span(.*?)class=\"detail-title-sm\">(.*?)<span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi,
-            "regexIndex": 7,
-            "clear": "",
-            "value": ""
-        },
-        "price": {
-            "url": "http://www.ikd.sadearge.com/Firma/tablo.php",
-            "regex": /row11_satis(.*?)>(.*?)<\/td>/gmi,
-            "regexIndex": 2,
-            "clear": "",
-            "value": ""
-        }
-    },
-    "Yarım": {
-        "status": {
-            "url": "https://finanswebde.com/altin/yarim-altin",
-            "regex": /<div class="col-md-6"><span class="detail-change(.*?)>(.*?)<!--(.*?)<\/span>(.*?)<span(.*?)class=\"detail-title-sm\">(.*?)<span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi,
-            "regexIndex": 2,
-            "clear": "",
-            "value": ""
-        },
-        "vote": {
-            "url": "https://finanswebde.com/altin/yarim-altin",
-            "regex": /<div class="col-md-6"><span class="detail-change(.*?)>(.*?)<!--(.*?)<\/span>(.*?)<span(.*?)class=\"detail-title-sm\">(.*?)<span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi,
-            "regexIndex": 7,
-            "clear": "",
-            "value": ""
-        },
-        "price": {
-            "url": "http://www.ikd.sadearge.com/Firma/tablo.php",
-            "regex": /row12_satis(.*?)>(.*?)<\/td>/gmi,
-            "regexIndex": 2,
-            "clear": "",
-            "value": ""
-        }
-    }
-};
+var fwRegex = /(.*?)<div class="col-md-6"><span class="detail-change(.*?)">(.*?)<!--(.*?)<\/span><div class="progress progress-bar-sm"><div class="progress-bar(.*?)" role="progressbar" style="(.*?)" aria-valuenow="(.*?)" aria-valuemin="0" aria-valuemax="100"><\/div><\/div><span class="detail-title-sm"><span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi;
+var DB = {
+	"http://www.ikd.sadearge.com/Firma/tablo.php": [
+		{
+			"name": "Değişiklik",
+			"regex": /tarih(.*?)>(.*?)<\/span>/gmi,
+			"regexIndex": 2,
+			"clear": /Son Güncellenme Tarihi :/g,
+			"value": ""
+		},
+		{
+			"name": "Gram",
+			"regex": /row6_satis(.*?)>(.*?)<\/td>/gmi,
+			"regexIndex": 2,
+			"clear": "",
+			"value": ""
+		},
+		{
+			"name": "Çeyrek",
+			"regex": /row11_satis(.*?)>(.*?)<\/td>/gmi,
+			"regexIndex": 2,
+			"clear": "",
+			"value": ""
+		},
+		{
+			"name": "Yarım",
+			"regex": /row12_satis(.*?)>(.*?)<\/td>/gmi,
+			"regexIndex": 2,
+			"clear": "",
+			"value": ""
+		}
+	],
+	"https://finanswebde.com/altin/gram-altin": [
+		{
+			"name": "Gram Durum",
+			"regex": fwRegex,
+			"regexIndex": 3,
+			"clear": "",
+			"value": ""
+		},
+		{
+			"name": "Gram Oy",
+			"regex": fwRegex,
+			"regexIndex": 8,
+			"clear": "",
+			"value": ""
+		}
+	],
+	"https://finanswebde.com/altin/ceyrek-altin": [
+		{
+			"name": "Çeyrek Durum",
+			"regex": fwRegex,
+			"regexIndex": 3,
+			"clear": "",
+			"value": ""
+		},
+		{
+			"name": "Çeyrek Oy",
+			"regex": fwRegex,
+			"regexIndex": 8,
+			"clear": "",
+			"value": ""
+		}
+	],
+	"https://finanswebde.com/altin/yarim-altin": [
+		{
+			"name": "Yarım Durum",
+			"regex": fwRegex,
+			"regexIndex": 3,
+			"clear": "",
+			"value": ""
+		},
+		{
+			"name": "Yarım Oy",
+			"regex": fwRegex,
+			"regexIndex": 8,
+			"clear": "",
+			"value": ""
+		}
+	]
+}
 
 Refresh();
+HttpServerStart();
 
-http.createServer((req, res) => {
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.end(`<meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover"><pre>${GLOBAL_MSG}</pre>`);
-    Refresh();
-}).listen(port, hostname, () => {
-    console.log(`Server running at http://${hostname}:${port}/`);
-});
-
-function Refresh(){
-    var urls = {};
-    for(i in GLOBAL_DATA){
-        for (j in GLOBAL_DATA[i]){
-            urls[GLOBAL_DATA[i][j].url] = 1;
-        }
-    }
-    for(url in urls){
-        Get(url, Put);
-    }
+function Refresh() {
+	for (url in DB) {
+		Get(url, Put);
+	}
+	clearTimeout(RefreshTimer);
+	RefreshTimer = setTimeout(Refresh, RefreshTime);
 }
 
-function Put(data, url){
-    for(i in GLOBAL_DATA){
-        for(j in GLOBAL_DATA[i]){
-            if(GLOBAL_DATA[i][j].url == url){
-                GLOBAL_DATA[i][j].value = Parse(data, GLOBAL_DATA[i][j]);
-                GLOBAL_MSG = HumanReadable(GLOBAL_DATA);
-            }
-        }
-    }
+function Put(data, url) {
+	for (i in DB[url]) {
+		DB[url][i].value = Parse(data, DB[url][i]);
+	}
+	GLOBAL_MSG = HumanReadable(DB);
 }
 
-function Parse(data, build){
-    var ret = '';
-    var matches = MatchAll(data, build.regex);
-    ret = matches[build.regexIndex + ''] + '';
-    ret = ret.trim();
-    ret = striptags(ret);
-    ret = ret.trim();
-    ret = ret.replace(build.clear, '');
-    ret = ret.trim();
-    return ret;
+function Parse(data, build) {
+	var ret = '';
+	ret = MatchValue(data, build.regex, build.regexIndex).toString();
+	ret = ret.trim();
+	ret = striptags(ret);
+	ret = ret.trim();
+	ret = ret.replace(build.clear, '');
+	ret = ret.trim();
+	return ret;
 }
 
-function HumanReadable(data){
-    var ret = '';
-    for(i in data){
-        var price = '';
-        if(data[i].hasOwnProperty('price')){
-            price = data[i].price.value;
-        }
-        
-        var status = '';
-        if(data[i].hasOwnProperty('status')){
-            status = data[i].status.value;
-        }
-        
-        var vote = '';
-        if(data[i].hasOwnProperty('vote')){
-            vote = data[i].vote.value;
-        }
-        
-        ret += `${i}: ${price} ${status} ${vote}\n`;
-    }
-    ret = ret.replace(/\ \ /g, ' ');
-    return ret;
+function HumanReadable(data) {
+	var ret = '';
+	for (i in data) {
+		for (j in data[i]) {
+			ret += `${data[i][j].name}: ${data[i][j].value}\n`;
+		}
+	}
+	ret = ret.replace(/\ \ /g, ' ');
+	return ret;
+}
+
+function MatchValue(str, regex, index) {
+	var temp = MatchAll(str, regex);
+	if (temp.hasOwnProperty(index)) {
+		return temp[index];
+	}
+	return '';
 }
 
 function MatchAll(str, regex) {
-    let m;
-    var ret = {};
-    while ((m = regex.exec(str)) !== null) {
-        if (m.index === regex.lastIndex) {
-            regex.lastIndex++;
-        }
-        m.forEach((match, groupIndex) => {
-            ret[groupIndex] = match;
-        });
-    }
-    return ret;
+	let m;
+	var ret = {};
+	while ((m = regex.exec(str)) !== null) {
+		if (m.index === regex.lastIndex) {
+			regex.lastIndex++;
+		}
+		m.forEach((match, groupIndex) => {
+			ret[groupIndex] = match;
+		});
+	}
+	return ret;
 }
 
-function Get(url, callback){
-    console.log(++GetCounter);
-    request({
-        url: url,
-        method: "get"
-    }, (error, response, body) => {
-        callback(body, url);
-    });
+function Get(url, callback) {
+	console.log(++GetCounter);
+	request({
+		url: url,
+		method: "get"
+	}, (error, response, body) => {
+		callback(body, url);
+	});
+}
+
+function HttpServerStart() {
+	http.createServer((req, res) => {
+		res.statusCode = 200;
+		res.setHeader('Content-Type', 'text/html; charset=utf-8');
+		res.end(`<meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover"><pre>${GLOBAL_MSG}</pre>`);
+	}).listen(port, hostname, () => {
+		console.log(`Server running at http://${hostname}:${port}/`);
+	});
 }

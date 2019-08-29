@@ -1,13 +1,13 @@
 module.exports = {
-    "data": () => { return finanswebde; },
+    "data": () => { return data; },
     "Get": Get
 };
 
-const MatchAll = require('./rMatchAll.js');
 const req = require("request");
+const MatchAll = require('./rMatchAll.js');
 const striptags = require('striptags');
 
-var finanswebde = {
+let data = {
     "Gram": {
         "url": 'https://finanswebde.com/altin/gram-altin',
         "status": "",
@@ -24,14 +24,15 @@ var finanswebde = {
         "vote": ""
     }
 };
+
 function Get() {
-    for (let i in finanswebde) {
-        let url = finanswebde[i].url;
+    for (let i in data) {
+        let url = data[i].url;
         req(url, function (e, r, b) {
             if (!e && r.statusCode == 200) {
-                status = MatchAll(b, /<div class="col-md-6"><span class="detail-change(.*?)>(.*?)<!--(.*?)<\/span>(.*?)<span(.*?)class=\"detail-title-sm\">(.*?)<span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi);
-                finanswebde[i].status = striptags(status[2]).trim();
-                finanswebde[i].vote = striptags(status[7]).trim();
+                let status = MatchAll(b, /<div class="col-md-6"><span class="detail-change(.*?)>(.*?)<!--(.*?)<\/span>(.*?)<span(.*?)class=\"detail-title-sm\">(.*?)<span>(.*?)<\/span>(.*?)<\/span>(.*?)/gmi);
+                data[i].status = striptags(status[2]).trim();
+                data[i].vote = striptags(status[7]).trim();
             }
         });
     }

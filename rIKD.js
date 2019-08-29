@@ -1,55 +1,36 @@
 module.exports = {
-    "data": () => { return ikd },
+    "data": () => { return data },
     "Get": Get
 };
 
-const http = require("http");
+const req = require("request");
 const MatchAll = require('./rMatchAll.js');
 
-var ikd = {
+let data = {
     "last": "",
     "Gram": "",
     "Çeyrek": "",
     "Yarım": ""
-}
-function Get() {
-    var options = {
-        host: 'www.ikd.sadearge.com',
-        port: 80,
-        path: '/Firma/tablo.php',
-        method: 'GET'
-    };
+};
 
-    var req = http.request(options, function (res) {
-        res.setEncoding('utf8');
-        var data = "";
-        res.on('data', function (chunk) {
-            data += chunk;
-        });
-        res.on('end', function () {
-            gram = MatchAll(data, /row6_satis(.*?)>(.*?)<\/td>/gmi);
-            ceyrek = MatchAll(data, /row11_satis(.*?)>(.*?)<\/td>/gmi);
-            yarim = MatchAll(data, /row12_satis(.*?)>(.*?)<\/td>/gmi);
-            sonDegisiklik = MatchAll(data, /tarih(.*?)>(.*?)<\/span>/gmi);
-            if (ceyrek[2] != undefined && yarim[2] != undefined) {
-                ikd["Gram"] = gram[2].trim();
-                ikd["Çeyrek"] = ceyrek[2].trim();
-                ikd["Yarım"] = yarim[2].trim();
-                ikd["last"] = sonDegisiklik[2].trim()
+function Get() {
+    let url = "http://www.ikd.sadearge.com/Firma/tablo.php"
+    req(url, function (e, r, b) {
+        if (!e && r.statusCode == 200) {
+            let gram = MatchAll(b, /row6_satis(.*?)>(.*?)<\/td>/gmi);
+            let ceyrek = MatchAll(b, /row11_satis(.*?)>(.*?)<\/td>/gmi);
+            let yarim = MatchAll(b, /row12_satis(.*?)>(.*?)<\/td>/gmi);
+            let last = MatchAll(b, /tarih(.*?)>(.*?)<\/span>/gmi);
+            if (gram[2] != undefined && ceyrek[2] != undefined && yarim[2] != undefined) {
+                data["last"] = last[2].trim()
                     .replace(/Son Güncellenme Tarihi : /ig, "")
                     .replace(/SonDeğişiklik/ig, "")
                     .trim()
-                ;
+                    ;
+                data["Gram"] = gram[2].trim();
+                data["Çeyrek"] = ceyrek[2].trim();
+                data["Yarım"] = yarim[2].trim();
             }
-        });
+        }
     });
-
-    req.on('error', function (e) {
-        console.log('problem with request: ' + e.message);
-    });
-
-    req.write('data\n');
-    req.end();
-
-    return ikd;
 }

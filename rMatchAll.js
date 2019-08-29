@@ -1,6 +1,6 @@
 module.exports = function(str, regex) {
 	let m;
-	var ret = {};
+	let ret = {};
 	while ((m = regex.exec(str)) !== null) {
 		if (m.index === regex.lastIndex) {
 			regex.lastIndex++;

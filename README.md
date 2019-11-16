@@ -11,7 +11,7 @@ npm i -g %userprofile%\desktop\gold
 
 ## BASH
 ```
-cd ~\Desktop
+cd ~/Desktop
 git clone https://github.com/necdetuygur/gold.git
 cd gold
 npm install
